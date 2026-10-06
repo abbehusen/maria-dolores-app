@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- EXEMPLO FICTÍCIO DE TESTE, SEM VALIDADE FISCAL -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+<NFe><infNFe Id="NFe29250108450759000501550010000099991123456788" versao="4.00">
+<ide><mod>55</mod><nNF>9999</nNF><dhEmi>2025-01-15T10:00:00-03:00</dhEmi><tpNF>1</tpNF></ide>
+<emit><CNPJ>08450759000501</CNPJ><xNome>FORNECEDOR FICTÍCIO PARA TESTE</xNome></emit>
+<dest><CNPJ>68120276000147</CNPJ><xNome>DESTINATÁRIO DE TESTE</xNome></dest>
+<det nItem="1"><prod><cProd>TESTE.001.FO</cProd><xProd>BRINCO EXEMPLO / QUARTZO</xProd>
+<qCom>2</qCom><vUnCom>100.00</vUnCom><vProd>200.00</vProd><vDesc>20.00</vDesc><vFrete>10.00</vFrete><indTot>1</indTot></prod></det>
+<det nItem="2"><prod><cProd>TESTE.002</cProd><xProd>EMBALAGEM EXEMPLO</xProd>
+<qCom>1</qCom><vUnCom>20.00</vUnCom><vProd>20.00</vProd><indTot>1</indTot></prod></det>
+<total><ICMSTot><vNF>210.00</vNF></ICMSTot></total>
+</infNFe></NFe><protNFe><infProt><chNFe>29250108450759000501550010000099991123456788</chNFe><cStat>100</cStat></infProt></protNFe></nfeProc>

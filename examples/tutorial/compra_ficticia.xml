@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+<NFe><infNFe Id="NFe29260908450759000501550010000910011123456780" versao="4.00">
+<ide><mod>55</mod><nNF>91001</nNF><dhEmi>2026-09-01T10:00:00-03:00</dhEmi><tpNF>1</tpNF></ide>
+<emit><CNPJ>08450759000501</CNPJ><xNome>FORNECEDOR FICTÍCIO PARA TESTE</xNome></emit>
+<dest><CNPJ>68120276000147</CNPJ><xNome>DESTINATÁRIO DE TESTE</xNome></dest>
+<total><ICMSTot><vNF>2740.00</vNF></ICMSTot></total>
+<det nItem="1"><prod><cProd>TUT.BRI</cProd><xProd>BRINCO AURORA</xProd><qCom>10</qCom><vUnCom>100</vUnCom><vProd>1000.00</vProd><indTot>1</indTot></prod></det><det nItem="2"><prod><cProd>TUT.ANE</cProd><xProd>ANEL LUZ 17</xProd><qCom>6</qCom><vUnCom>150</vUnCom><vProd>900.00</vProd><indTot>1</indTot></prod></det><det nItem="3"><prod><cProd>TUT.COL</cProd><xProd>COLAR SOL</xProd><qCom>4</qCom><vUnCom>200</vUnCom><vProd>800.00</vProd><indTot>1</indTot></prod></det><det nItem="4"><prod><cProd>TUT.SAC</cProd><xProd>SACOLA PAPEL</xProd><qCom>20</qCom><vUnCom>2</vUnCom><vProd>40.00</vProd><indTot>1</indTot></prod></det><det nItem="5"><prod><cProd>TUT.FOL</cProd><xProd>FOLHETO CORTESIA</xProd><qCom>1</qCom><vUnCom>0</vUnCom><vProd>0.00</vProd><indTot>1</indTot></prod></det></infNFe></NFe><protNFe><infProt><chNFe>29260908450759000501550010000910011123456780</chNFe><cStat>100</cStat></infProt></protNFe></nfeProc>

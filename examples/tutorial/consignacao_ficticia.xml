@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+<NFe><infNFe Id="NFe29260908450759000501550010000910021123456788" versao="4.00">
+<ide><mod>55</mod><nNF>91002</nNF><dhEmi>2026-09-10T10:00:00-03:00</dhEmi><tpNF>1</tpNF></ide>
+<emit><CNPJ>08450759000501</CNPJ><xNome>FORNECEDOR FICTÍCIO PARA TESTE</xNome></emit>
+<dest><CNPJ>68120276000147</CNPJ><xNome>DESTINATÁRIO DE TESTE</xNome></dest>
+<total><ICMSTot><vNF>360.00</vNF></ICMSTot></total>
+<det nItem="1"><prod><cProd>TUT.PUL</cProd><xProd>PULSEIRA LUA CONSIGNADA</xProd><qCom>3</qCom><vUnCom>120</vUnCom><vProd>360.00</vProd><indTot>1</indTot></prod></det></infNFe></NFe><protNFe><infProt><chNFe>29260908450759000501550010000910021123456788</chNFe><cStat>100</cStat></infProt></protNFe></nfeProc>
