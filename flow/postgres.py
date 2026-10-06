@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import re
 from collections.abc import Mapping
 from contextlib import contextmanager
@@ -350,14 +351,44 @@ class PostgresDatabase:
     def __init__(self, url, local_path=None):
         try:
             import psycopg
+            from psycopg_pool import ConnectionPool
         except ImportError as exc:
-            raise RuntimeError('PostgreSQL requer psycopg. Instale as dependências de requirements.txt.') from exc
+            raise RuntimeError(
+                'PostgreSQL requer psycopg e psycopg_pool. '
+                'Instale as dependências de requirements.txt.'
+            ) from exc
+
         self._psycopg = psycopg
         self.url = url
         self.path = Path(local_path or 'data/flow.sqlite3').resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.migration_backup = None
-        with psycopg.connect(self.url) as conn:
+
+        # Reutiliza conexões em vez de abrir uma conexão TCP/TLS nova a cada
+        # consulta. Isso é especialmente importante no Render, onde uma única
+        # página do NiceGUI pode disparar várias consultas sequenciais ao
+        # Supabase. Os limites podem ser ajustados por variáveis de ambiente,
+        # mas os padrões são deliberadamente pequenos para o plano Free.
+        min_size = max(1, int(os.environ.get('DB_POOL_MIN_SIZE', '1')))
+        max_size = max(min_size, int(os.environ.get('DB_POOL_MAX_SIZE', '4')))
+        timeout = float(os.environ.get('DB_POOL_TIMEOUT', '30'))
+
+        self._pool = ConnectionPool(
+            conninfo=self.url,
+            min_size=min_size,
+            max_size=max_size,
+            timeout=timeout,
+            open=True,
+            kwargs={
+                'autocommit': False,
+                'connect_timeout': 10,
+            },
+        )
+        # Falha cedo no deploy se a conexão estiver incorreta, em vez de deixar
+        # o primeiro clique do usuário descobrir o problema.
+        self._pool.wait(timeout=timeout)
+
+        with self._pool.connection() as conn:
             # psycopg can execute a multi-statement schema string directly.
             conn.execute(POSTGRES_SCHEMA)
             version = conn.execute("SELECT value FROM metadata WHERE key='schema_version'").fetchone()[0]
@@ -367,12 +398,9 @@ class PostgresDatabase:
 
     @contextmanager
     def connect(self):
-        raw = self._psycopg.connect(self.url)
-        conn = PgConnection(raw)
-        try:
-            yield conn
-        finally:
-            raw.close()
+        # A conexão volta ao pool ao sair do contexto; não é fechada fisicamente.
+        with self._pool.connection() as raw:
+            yield PgConnection(raw)
 
     @contextmanager
     def transaction(self):
