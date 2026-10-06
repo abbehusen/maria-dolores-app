@@ -5,6 +5,7 @@ Transfers and located sales describe custody only; never duplicate purchases.
 """
 from collections import defaultdict
 from decimal import Decimal
+from .db import is_integrity_error
 from .money import RuleError, day, today, pieces, rounded
 
 
@@ -65,7 +66,9 @@ class Locations:
                     c.execute('UPDATE locations SET name=?,active=? WHERE id=?',(name,int(active),location_id))
                 else:
                     location_id=c.execute('INSERT INTO locations(name,active) VALUES(?,?)',(name,int(active))).lastrowid
-            except __import__('sqlite3').IntegrityError:
+            except Exception as exc:
+                if not is_integrity_error(exc):
+                    raise
                 raise RuleError('Já existe um local com esse nome.')
             audit(c,'save_location','location',location_id,{'name':name,'active':active})
         return location_id

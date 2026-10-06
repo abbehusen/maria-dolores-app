@@ -78,7 +78,7 @@ CREATE VIEW IF NOT EXISTS inventory AS
 '''
 
 
-class Database:
+class SQLiteDatabase:
     def __init__(self, path):
         self.path = Path(path).resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -271,3 +271,21 @@ class Database:
         with self.connect() as source, closing(sqlite3.connect(target)) as destination:
             source.backup(destination)
         return target
+
+
+class Database:
+    """Select SQLite locally or PostgreSQL/Supabase when DATABASE_URL is set."""
+    def __new__(cls, path, *, force_sqlite=False, database_url=None):
+        url = None if force_sqlite else (database_url or os.environ.get('DATABASE_URL'))
+        if url:
+            from .postgres import PostgresDatabase
+            return PostgresDatabase(url, local_path=path)
+        return SQLiteDatabase(path)
+
+
+def is_integrity_error(exc):
+    """True for uniqueness/FK integrity errors on either supported backend."""
+    if isinstance(exc, sqlite3.IntegrityError):
+        return True
+    cls = exc.__class__
+    return cls.__module__.startswith('psycopg') and any(base.__name__ == 'IntegrityError' for base in cls.__mro__)

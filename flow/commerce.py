@@ -2,6 +2,7 @@
 import re
 from uuid import uuid4
 from decimal import Decimal
+from .db import is_integrity_error
 from .money import RuleError, cents, day, today, percent
 
 
@@ -120,7 +121,9 @@ class Commerce:
                     c.execute('UPDATE channels SET name=?,kind=?,store_rate=?,seller_rate=?,store_beneficiary_id=?,active=? WHERE id=?',values+(channel_id,))
                 else:
                     channel_id=c.execute('INSERT INTO channels(name,kind,store_rate,seller_rate,store_beneficiary_id,active) VALUES(?,?,?,?,?,?)',values).lastrowid
-            except __import__('sqlite3').IntegrityError:
+            except Exception as exc:
+                if not is_integrity_error(exc):
+                    raise
                 raise RuleError('Já existe um canal com esse nome.')
             current=c.execute('SELECT location_id FROM channels WHERE id=?',(channel_id,)).fetchone()
             if current and not current['location_id']:
@@ -168,7 +171,9 @@ class Commerce:
             try:
                 c.execute('UPDATE customers SET name=?,phone=?,email=?,birthday=?,city=?,address=?,notes=?,marketing_opt_in=?,identity_key=? WHERE id=?',
                     (name,phone,data.get('email',''),data.get('birthday',''),data.get('city',''),data.get('address',''),data.get('notes',''),int(bool(data.get('marketing_opt_in'))),key,customer_id))
-            except __import__('sqlite3').IntegrityError:
+            except Exception as exc:
+                if not is_integrity_error(exc):
+                    raise
                 raise RuleError('Já existe outro cliente com esse nome e telefone. Selecione o cadastro existente.')
             audit(c,'save_customer','customer',customer_id,{'name':name,'marketing_opt_in':bool(data.get('marketing_opt_in'))})
         return customer_id

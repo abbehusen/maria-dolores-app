@@ -26,8 +26,8 @@ def validate_backup(path):
                 raise ValueError('Versão de backup incompatível.')
             if conn.execute("SELECT name FROM sqlite_master WHERE type='trigger'").fetchone():
                 raise ValueError('O backup contém uma estrutura não reconhecida.')
-        db = Database(candidate)
-        reference = Database(Path(folder) / 'reference.sqlite3')
+        db = Database(candidate, force_sqlite=True)
+        reference = Database(Path(folder) / 'reference.sqlite3', force_sqlite=True)
         with db.connect() as conn, reference.connect() as expected:
             def structure(c):
                 return {(r[0], r[1]): r[2] for r in c.execute(

@@ -1,9 +1,9 @@
 """Operações atômicas do negócio. A interface nunca altera saldos diretamente."""
 import json
 from contextlib import nullcontext
-import sqlite3
 from decimal import Decimal
 from uuid import uuid4
+from .db import is_integrity_error
 from .money import RuleError, add_months, cents, day, decimal, pieces, rounded, split_cents, today
 from .nfe import parse_xml
 from .ledger import rebuild_history
@@ -30,6 +30,10 @@ def stock_row(conn, product_id):
 
 
 def move(conn, product_id, when, quantity, cost, kind, source, reason, *, counted=None, unit_cost=None, movement_id=None):
+    if movement_id is None:
+        return conn.execute('INSERT INTO movements(product_id,occurred_on,quantity,cost_cents,kind,source,reason,'
+                            'counted_quantity,input_unit_cost_cents) VALUES (?,?,?,?,?,?,?,?,?)',
+                            (product_id, when, quantity, cost, kind, str(source), reason, counted, unit_cost)).lastrowid
     return conn.execute('INSERT INTO movements(id,product_id,occurred_on,quantity,cost_cents,kind,source,reason,'
                         'counted_quantity,input_unit_cost_cents) VALUES (?,?,?,?,?,?,?,?,?,?)',
                         (movement_id, product_id, when, quantity, cost, kind, str(source), reason, counted, unit_cost)).lastrowid
@@ -71,7 +75,7 @@ class Business(Commerce, Locations):
             -COALESCE(SUM(CASE WHEN m.kind='RETURN' THEN m.quantity ELSE 0 END),0) AS returned
             FROM consignment_lots l JOIN products p ON p.id=l.product_id
             JOIN invoice_items ii ON ii.id=l.invoice_item_id JOIN invoices i ON i.id=ii.invoice_id
-            LEFT JOIN active_consignment_moves m ON m.lot_id=l.id GROUP BY l.id ORDER BY l.received_on,l.id""")
+            LEFT JOIN active_consignment_moves m ON m.lot_id=l.id GROUP BY l.id,p.id,i.id ORDER BY l.received_on,l.id""")
 
     def return_consignment(self, lot_id, quantity, reason, *, when=None, key=None):
         when, quantity = day(when or today()), pieces(quantity)
@@ -155,7 +159,9 @@ class Business(Commerce, Locations):
                                            data.get('category', ''), data.get('material', ''), data.get('stone', ''),
                                            data.get('size', ''), data.get('collection', ''),
                                            cents(data.get('selling_price', '0')))).lastrowid
-            except sqlite3.IntegrityError as exc:
+            except Exception as exc:
+                if not is_integrity_error(exc):
+                    raise
                 raise RuleError('Este código e variante já estão cadastrados para o fornecedor.') from exc
             if quantity:
                 move(conn, product_id, when, quantity, quantity * unit_cost,
@@ -522,8 +528,13 @@ class Business(Commerce, Locations):
                     lot_id = product['lot_id']
                     conn.execute('INSERT INTO consignment_sale_items(sale_id,lot_id,product_id,sku,name,quantity,unit_price_cents,cost_cents) VALUES (?,?,?,?,?,?,?,?)',
                                  (sale_id, lot_id, product['id'], product['sku'], product['name'], qty, price, cost))
-                    conn.execute("INSERT INTO consignment_moves(id,lot_id,occurred_on,quantity,kind,sale_id,request_key,reason) VALUES (?,?,?,?,'SALE',?,?,?)",
-                                 ((_movement_ids or {}).get(('cons', lot_id)), lot_id, when, -qty, sale_id, f'cons-sale-{sale_id}-{lot_id}', f'Venda #{sale_id}'))
+                    historical_movement_id = (_movement_ids or {}).get(('cons', lot_id))
+                    if historical_movement_id is None:
+                        conn.execute("INSERT INTO consignment_moves(lot_id,occurred_on,quantity,kind,sale_id,request_key,reason) VALUES (?,?,?,'SALE',?,?,?)",
+                                     (lot_id, when, -qty, sale_id, f'cons-sale-{sale_id}-{lot_id}', f'Venda #{sale_id}'))
+                    else:
+                        conn.execute("INSERT INTO consignment_moves(id,lot_id,occurred_on,quantity,kind,sale_id,request_key,reason) VALUES (?,?,?,?,'SALE',?,?,?)",
+                                     (historical_movement_id, lot_id, when, -qty, sale_id, f'cons-sale-{sale_id}-{lot_id}', f'Venda #{sale_id}'))
                     lot_info = conn.execute('SELECT l.invoice_item_id,i.issuer_name FROM consignment_lots l JOIN invoice_items ii ON ii.id=l.invoice_item_id JOIN invoices i ON i.id=ii.invoice_id WHERE l.id=?', (lot_id,)).fetchone()
                     expense_row(conn, key=f'consignment-{sale_id}-{lot_id}', when=when,
                                 due=day(data.get('consignment_due', when), future=True), amount=cost,

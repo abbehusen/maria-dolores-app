@@ -52,7 +52,8 @@ def main():
         format='%(asctime)s %(levelname)s %(message)s'
     )
 
-    instance_lock = lock_instance(args.data_dir)
+    online_database = bool(os.environ.get('DATABASE_URL'))
+    instance_lock = None if online_database else lock_instance(args.data_dir)
 
     db_path = args.data_dir / (
         'demonstracao.sqlite3'
@@ -60,7 +61,8 @@ def main():
         else 'flow.sqlite3'
     )
 
-    apply_pending_restore(db_path)
+    if not online_database:
+        apply_pending_restore(db_path)
 
     db = Database(db_path)
     business = Business(db)

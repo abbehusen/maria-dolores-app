@@ -2,3 +2,5 @@ nicegui==3.8.0
 defusedxml==0.7.1
 tzdata==2025.2
 httpx[socks]==0.28.1
+
+psycopg[binary]==3.2.10

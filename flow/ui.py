@@ -1243,8 +1243,10 @@ def register_pages(business, *, demo=False):
 
                 def backup():
                     with tempfile.TemporaryDirectory() as directory:
-                        path = db.backup(Path(directory) / 'flow.sqlite3')
-                        ui.download.content(path.read_bytes(), f'fe-flow-backup-{today()}.sqlite3', 'application/octet-stream')
+                        requested = Path(directory) / ('flow.json' if getattr(db, 'is_postgres', False) else 'flow.sqlite3')
+                        path = db.backup(requested)
+                        mime = 'application/json' if path.suffix == '.json' else 'application/octet-stream'
+                        ui.download.content(path.read_bytes(), f'fe-flow-backup-{today()}{path.suffix}', mime)
                 with ui.row().classes('gap-3'):
                     button('Baixar backup completo', backup, icon='save_alt')
                     button('Exportar dados em JSON', lambda: ui.download.content(reports.export_json(db),
@@ -1281,8 +1283,11 @@ def register_pages(business, *, demo=False):
                         button('Confirmar restauração e encerrar', restore, icon='restore')
                         button('Voltar', dialog.close, secondary=True)
                     dialog.open()
-                button('Restaurar backup', restore_dialog, icon='restore', secondary=True)
-                ui.label(f'Pasta dos dados: {db.path.parent}').classes('muted')
+                if getattr(db, 'is_postgres', False):
+                    ui.label('Online: dados persistidos no PostgreSQL/Supabase. A restauração de arquivo SQLite fica disponível apenas na versão local.').classes('muted')
+                else:
+                    button('Restaurar backup', restore_dialog, icon='restore', secondary=True)
+                    ui.label(f'Pasta dos dados: {db.path.parent}').classes('muted')
 
     from .locations_ui import register_locations
     register_locations(business,shell,heading,field,button,table,perform)
